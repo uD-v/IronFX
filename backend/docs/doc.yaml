@@ -1,0 +1,127 @@
+openapi: 3.0.0
+info:
+  title: IronFX API
+  version: 1.3.0
+  description: API для сервісу **IronFX** з автентифікацією через Telegram WebApp.
+
+components:
+  securitySchemes:
+    TelegramWebAppAuth:
+      type: apiKey
+      in: header
+      name: tgInitData
+      description: "Передайте сюди рядок з Telegram.WebApp.initData"
+
+  schemas:
+    UserData:
+      type: object
+      properties:
+        id: { type: integer }
+        tgid: { type: integer }
+        language: { type: string }
+        limit: { type: integer }
+        created_at: { type: string, format: date-time }
+
+    ErrorResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: false }
+        message: { type: string }
+
+paths:
+  /api/user/verify/:
+    get:
+      tags:
+        - user
+      summary: Верифікація користувача
+      security:
+        - TelegramWebAppAuth: []  
+      responses:
+        '200':
+          description: Успіх
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  user: { $ref: '#/components/schemas/UserData' }
+        '403':
+          description: Помилка автентифікації
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail: { type: string, example: "Telegram data is missing" }
+
+  /api/user/stats/:
+    get:
+      tags:
+        - stats
+      summary: Отримання статистики користувача
+      security:
+        - TelegramWebAppAuth: []  
+      responses:
+        '200':
+          description: Статистика знайдена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  message: { type: string, example: "User stats found." }
+                  stats:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        currency_pair: { type: string }
+                        lost: { type: boolean }
+                        created_at: { type: string, format: date-time }
+        '404':
+          description: Статистику не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                ok: false
+                message: "User stats not found."
+
+    post:
+      tags:
+        - stats
+      summary: Створення запису статистики
+      security:
+        - TelegramWebAppAuth: []  
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currency_pair, is_lost]
+              properties:
+                currency_pair: { type: string, example: "EUR/USD" }
+                is_lost: { type: boolean, example: false }
+      responses:
+        '201':
+          description: Успішно створено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+        '400':
+          description: Помилка даних
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                ok: false
+                message: "Currency pair or deal status is missing"
