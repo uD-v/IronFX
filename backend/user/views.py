@@ -9,7 +9,7 @@ from decimal import Decimal as dou
 from rest_framework.permissions import AllowAny
 from datetime import datetime
 from stats.models import statsmodel as Stats
-from serializers import StatsSerializer
+from .serializers import StatsSerializer
 
 
 
@@ -27,16 +27,34 @@ def verify_user(request):
         }
     })
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
+@authentication_classes([TelegramWebAppAuthentication]) 
 def get_user_stats(request):
-  tgInitData = request.headers.get("tgInitData")
-  if not tgInitData:
-    return Response(data = {'ok': False, "message":"tgInitData is missing."}, status=HTTP_401_UNAUTHORIZED)
-  
-  try:
     user = request.user
-    stats = Stats.objects.get(user_id=user.id)
-    Serializer = StatsSerializer(stats, many=True)
-    return Response(data={"message": "User stats found.", "stats": Serializer.data})
-  except stats.DoesNotExist:
-    return Response(data = {"message": "User not found."}, status=HTTP_404_NOT_FOUND)
+    if request.method == "GET":
+        stats = Stats.objects.filter(user_id=user)
+        if not stats.exists():
+            return Response(
+                data={"ok": False, "message": "User stats not found."}, 
+                status=HTTP_404_NOT_FOUND
+            )
+
+        serializer = StatsSerializer(stats, many=True)
+        return Response(data={
+            "ok": True,
+            "message": "User stats found.", 
+            "stats": serializer.data
+        })
+    elif request.method == "POST":
+        data = request.data
+        currency_pair, is_lost = data.get("currency_pair"), data.get("is_lost")
+        if not currency_pair or not is_lost:
+            return Response(data = {"ok": False, "message": "Currency pair or deal status is missing"}, status = HTTP_400_BAD_REQUEST)
+        stats = Stats(
+            user_id = user,
+            currency_pair = currency_pair,
+            lost = is_lost
+        )
+
+        stats.save()
+        return Response(data = {"ok": True}, status = HTTP_201_CREATED)
