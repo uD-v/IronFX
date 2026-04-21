@@ -7,11 +7,10 @@ from decimal import Decimal as dou
 from rest_framework.permissions import AllowAny
 from datetime import datetime
 from stats.models import statsmodel as Stats
-
+from serializers import StatsSerializer
 
 @api_view(['GET'])
 def get_user_stats(request):
-  print("Suck pisia")
   tgInitData = request.headers.get("tgInitData")
   if not tgInitData:
     return Response(data = {'ok': False, "message":"tgInitData is missing."}, status=HTTP_401_UNAUTHORIZED)
@@ -19,6 +18,7 @@ def get_user_stats(request):
   try:
     user = request.user
     stats = Stats.objects.get(user_id=user.id)
-    return Response(data={"message": "User stats."})
-  except:
-    print("Peepeepoopoo")
+    Serializer = StatsSerializer(stats, many=True)
+    return Response(data={"message": "User stats found.", "stats": Serializer.data})
+  except stats.DoesNotExist:
+    return Response(data = {"message": "User not found."}, status=HTTP_404_NOT_FOUND)
