@@ -16,3 +16,5 @@ class Users(models.Model):
         verbose_name = 'Користувач'
         verbose_name_plural = 'Користувачі'
 
+
+# Create your models here.
