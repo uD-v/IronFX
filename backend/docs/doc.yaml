@@ -125,3 +125,4 @@ paths:
               example:
                 ok: false
                 message: "Currency pair or deal status is missing"
+                
