@@ -7,6 +7,7 @@ from django.shortcuts import render, HttpResponse
 import json
 from decimal import Decimal as dou
 from rest_framework.permissions import AllowAny
+from .models import Users
 from datetime import datetime
 from stats.models import statsmodel as Stats
 from .serializers import StatsSerializer
@@ -29,7 +30,7 @@ def verify_user(request):
 
 @api_view(['GET', 'POST'])
 @authentication_classes([TelegramWebAppAuthentication]) 
-def get_user_stats(request):
+def user_stats(request):
     user = request.user
     if request.method == "GET":
         stats = Stats.objects.filter(user_id=user)
@@ -58,3 +59,25 @@ def get_user_stats(request):
 
         stats.save()
         return Response(data = {"ok": True}, status = HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@authentication_classes([TelegramWebAppAuthentication])
+def change_lang(request):
+    data = request.data
+    new_lang = data.get("language")
+    if not new_lang or new_lang not in ["ru", "en"]:
+        return Response(data = {"ok": False, "message": "Language is missing or consist of incorrect format"}, status = HTTP_400_BAD_REQUEST)
+    user = Users.objects.get(tgid= request.user.tgid)
+    user.language = new_lang
+    user.save()
+    return Response({
+        'ok': True, 
+        'user': {
+            'id': request.user.id,
+            'tgid': request.user.tgid,
+            'language': new_lang,
+            'limit': request.user.limit,
+            'created_at': request.user.created_at
+        }
+    })
