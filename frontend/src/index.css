@@ -1,0 +1,84 @@
+:root {
+  --color-bg-base: #0a0e17; /* Dark deep blue/black background */
+  --color-bg-surface: #121927; /* Slightly lighter surface for cards/inputs */
+  --color-border: #1e293b;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #94a3b8;
+  --color-primary: #3b82f6; /* Bright blue button */
+  --color-primary-hover: #2563eb;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-glow: rgba(56, 189, 248, 0.15); /* Soft cyan glow */
+  
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Background Glowing Circles */
+.bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: -1;
+}
+
+.bg-glow-1 {
+  width: 600px;
+  height: 600px;
+  background: var(--color-glow);
+  top: -200px;
+  left: -200px;
+}
+
+.bg-glow-2 {
+  width: 500px;
+  height: 500px;
+  background: var(--color-glow);
+  bottom: -100px;
+  right: -100px;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Utility classes */
+.text-success { color: var(--color-text-primary); } /* Wait, "Green" color is #22c55e in stats? Design has +$42.10 in green. */
+.text-green { color: var(--color-success); }
+.text-red { color: var(--color-danger); }
+.text-muted { color: var(--color-text-secondary); }
+
+/* Typography */
+h1 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

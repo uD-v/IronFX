@@ -7,9 +7,11 @@ from django.shortcuts import render, HttpResponse
 import json
 from decimal import Decimal as dou
 from rest_framework.permissions import AllowAny
+from .models import Users
 from datetime import datetime
 from stats.models import statsmodel as Stats
-from serializers import StatsSerializer
+from .serializers import StatsSerializer
+
 
 
 
@@ -28,15 +30,69 @@ def verify_user(request):
     })
 
 @api_view(['GET'])
-def get_user_stats(request):
-  tgInitData = request.headers.get("tgInitData")
-  if not tgInitData:
-    return Response(data = {'ok': False, "message":"tgInitData is missing."}, status=HTTP_401_UNAUTHORIZED)
-  
-  try:
+@authentication_classes([TelegramWebAppAuthentication]) 
+def verify_user(request):
+    return Response({
+        'ok': True, 
+        'user': {
+            'id': request.user.id,
+            'tgid': request.user.tgid,
+            'language': request.user.language,
+            'limit': request.user.limit,
+            'created_at': request.user.created_at
+        }
+    })
+
+@api_view(['GET', 'POST'])
+@authentication_classes([TelegramWebAppAuthentication]) 
+def user_stats(request):
     user = request.user
-    stats = Stats.objects.get(user_id=user.id)
-    Serializer = StatsSerializer(stats, many=True)
-    return Response(data={"message": "User stats found.", "stats": Serializer.data})
-  except stats.DoesNotExist:
-    return Response(data = {"message": "User not found."}, status=HTTP_404_NOT_FOUND)
+    if request.method == "GET":
+        stats = Stats.objects.filter(user_id=user)
+        if not stats.exists():
+            return Response(
+                data={"ok": False, "message": "User stats not found."}, 
+                status=HTTP_404_NOT_FOUND
+            )
+
+        serializer = StatsSerializer(stats, many=True)
+        return Response(data={
+            "ok": True,
+            "message": "User stats found.", 
+            "stats": serializer.data
+        })
+    elif request.method == "POST":
+        data = request.data
+        currency_pair, is_lost = data.get("currency_pair"), data.get("is_lost")
+        if not currency_pair or not is_lost:
+            return Response(data = {"ok": False, "message": "Currency pair or deal status is missing"}, status = HTTP_400_BAD_REQUEST)
+        stats = Stats(
+            user_id = user,
+            currency_pair = currency_pair,
+            lost = is_lost
+        )
+
+        stats.save()
+        return Response(data = {"ok": True}, status = HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@authentication_classes([TelegramWebAppAuthentication])
+def change_lang(request):
+    data = request.data
+    new_lang = data.get("language")
+    if not new_lang or new_lang not in ["ru", "en"]:
+        return Response(data = {"ok": False, "message": "Language is missing or consist of incorrect format"}, status = HTTP_400_BAD_REQUEST)
+    user = Users.objects.get(tgid= request.user.tgid)
+    user.language = new_lang
+    user.save()
+    return Response({
+        'ok': True, 
+        'user': {
+            'id': request.user.id,
+            'tgid': request.user.tgid,
+            'language': new_lang,
+            'limit': request.user.limit,
+            'created_at': request.user.created_at
+        }
+    })
