@@ -14,6 +14,21 @@ from .serializers import StatsSerializer
 
 
 
+
+@api_view(['GET'])
+@authentication_classes([TelegramWebAppAuthentication]) 
+def verify_user(request):
+    return Response({
+        'ok': True, 
+        'user': {
+            'id': request.user.id,
+            'tgid': request.user.tgid,
+            'language': request.user.language,
+            'limit': request.user.limit,
+            'created_at': request.user.created_at
+        }
+    })
+
 @api_view(['GET'])
 @authentication_classes([TelegramWebAppAuthentication]) 
 def verify_user(request):
