@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     'user.apps.OpenAI',
     'po',
     'stats',
-    'corsheaders'
+    'corsheaders',
+    'parser.apps.ParserConfig'
 ]
 
 REST_FRAMEWORK = {
