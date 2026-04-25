@@ -180,3 +180,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+
+  /api/users/change-lang/:
+    post:
+      tags:
+        - user
+      summary: Зміна мови інтерфейсу та аналітики
+      description: Оновлює мову користувача (ru, en, ua) для отримання персоналізованих відповідей від AI.
+      security:
+        - TelegramWebAppAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [language]
+              properties:
+                language:
+                  type: string
+                  description: Код мови
+                  enum: ["ru", "en"]
+                  example: "en"
+      responses:
+        '200':
+          description: Мову успішно змінено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  user: { $ref: '#/components/schemas/UserData' }
+        '400':
+          description: Помилка формату мови
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Користувач не авторизований
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
