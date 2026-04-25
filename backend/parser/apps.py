@@ -1,11 +1,11 @@
 import os
-from pytz import timezone
-from .settings import TIME_ZONE
 from django.apps import AppConfig
+from django.conf import settings
+from pytz import timezone
 
-class UsersConfig(AppConfig):
+class ParserConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core'
+    name = 'parser' 
 
     def ready(self):
         if os.environ.get('RUN_MAIN') == 'true':
@@ -14,20 +14,24 @@ class UsersConfig(AppConfig):
     def start_scheduler(self):
         from apscheduler.schedulers.background import BackgroundScheduler
         from django_apscheduler.jobstores import DjangoJobStore, register_events
-        from .tasks import nightly_sync
-        tz = timezone(TIME_ZONE)
+        from core.tasks import monthly_promo_parser
         
-        scheduler = BackgroundScheduler(timezone=tz) 
+        tz = timezone(settings.TIME_ZONE)
+        
+        scheduler = BackgroundScheduler(timezone=tz)
         scheduler.add_jobstore(DjangoJobStore(), "default")
+        
         scheduler.add_job(
-            nightly_sync,
+            monthly_promo_parser,
             trigger='cron',
-            hour=0,
-            minute=0,
-            id="nightly_task",
+            day=1,         
+            hour=0,        
+            minute=5,      
+            id="monthly_promo_parsing",
             max_instances=1,
             replace_existing=True,
         )
-        register_events(scheduler)
         
+        register_events(scheduler)
         scheduler.start()
+        print("--- Шедулер парсера промокодів запущено (щомісячно) ---")
