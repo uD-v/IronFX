@@ -149,7 +149,7 @@ paths:
                 timeframe:
                   type: string
                   description: Таймфрейм на графіку
-                  enum: ["1min", "5min", "15min", "30min", "1H", "4H", "1D"]
+                  enum: ["1min", "5min", "15min", "30min", "1H", "4H", "D1"]
                   example: "15min"
       responses:
         '200':
@@ -160,9 +160,6 @@ paths:
                 type: object
                 properties:
                   ok: { type: boolean, example: true }
-                  market_structure: { type: string, example: "BOS detected on local high" }
-                  liquidity_zones: { type: string, example: "FVG below the current price" }
-                  poi_analysis: { type: string, example: "Bullish Order Block at 1.0850" }
                   pair: { type: string, example: "EUR/USD" }
                   timeframe: { type: string, example: "M15" }
                   direction: { type: string, example: "UP" }
@@ -170,6 +167,7 @@ paths:
                   expiration: { type: string, example: "3 minutes" }
                   confidence: { type: integer, example: 9 }
                   comment: { type: string, example: "Профессиональное обоснование..." }
+                  limit: { type: integer, example: 17}
         '400':
           description: Помилка валідації або відсутність файлу
           content:
