@@ -44,8 +44,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_apscheduler',
     'core.apps.UsersConfig',
-    'user',
+    'user.apps.OpenAI',
     'po',
+    'stats'
 ]
 
 MIDDLEWARE = [
