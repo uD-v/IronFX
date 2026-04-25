@@ -106,7 +106,7 @@ def receive_signal(request):
         return Response({"ok": False, "message": "OpenAI client not initialized"}, status=500)
     
     response = ai_client.chat.completions.create(
-        model = "gpt-4o mini",
+        model = "gpt-4o-mini",
         response_format = { "type": "json_object" },
         messages = [
             {
@@ -178,7 +178,7 @@ Price Action (Уровень + Поглощение) = Уверенность 7/
         user.limit = user.limit - 1
         user.save()
 
-        return result
+        return Response(result, HTTP_200_OK)
     except Exception:
         return {"ok": False, "message": "Failed to parse json"}
     
