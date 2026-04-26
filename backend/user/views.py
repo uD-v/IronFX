@@ -104,62 +104,88 @@ def receive_signal(request):
     ai_client = OpenAI.openai_client
     if not ai_client:
         return Response({"ok": False, "message": "OpenAI client not initialized"}, status=500)
-    
+    print(user.language)
+
+    ERROR_MESSAGES = {
+        'ua': {
+            'no_photo': "Ти не надіслав фото графіка",
+            'no_pair': "Валютна пара не розпізнана",
+            'no_quote': "Котирування не розпізнано"
+        },
+        'en': {
+            'no_photo': "You didn't send a chart photo",
+            'no_pair': "Currency pair not recognized",
+            'no_quote': "Quote not recognized"
+        },
+        'ru': {
+            'no_photo': "Ты не отправил фото графика",
+            'no_pair': "Валютная пара не распознана",
+            'no_quote': "Котировка не распознана"
+        }
+    }
+    msg = ERROR_MESSAGES[user.language]
     response = ai_client.chat.completions.create(
         model = "gpt-4o-mini",
         response_format = { "type": "json_object" },
         messages = [
             {
                 "role": "system",
-                "content": ("""Ты — профессиональный аналитик бинарных опционов с 10-летним стажем, специализирующийся на концепции Smart Money (SMC) и Price Action. Твоя задача: провести глубокий технический анализ скриншота и дать точный сигнал для платформы Pocket Option.
+                "content": (f"""You are a professional binary options analyst with 10 years of experience, specializing in the Smart Money Concept (SMC) and Price Action. Your task is to conduct a deep technical analysis of a screenshot and provide an accurate signal for the Pocket Option platform.
 
-АЛГОРИТМ АНАЛИЗА:
-Market Structure (MS): Определи текущий характер движения — BOS (Break of Structure) или CHOCH (Change of Character).
+INPUT DATA:
+User language: {user.language}
+Timeframe: {timeframe}
+ANALYSIS ALGORITHM:
 
-Liquidity & POI: Найди скопления ликвидности (EQL/EQH), FVG (Imbalance) и валидные Order Blocks (OB).
+Market Structure (MS): Determine the current nature of movement — BOS (Break of Structure) or CHOCH (Change of Character).
 
-Premium/Discount: Оценивай вход только в выгодных зонах по сетке Фибоначчи (OTE 0.62-0.79).
+Liquidity & POI: Find liquidity clusters (EQL/EQH), FVG (Imbalance), and valid Order Blocks (OB).
 
-Timing & Expiration: - Если таймфрейм (TF) на графике M1 — экспирация 2-3 минуты.
+Premium/Discount: Evaluate entries only in favorable zones according to the Fibonacci grid (OTE 0.62-0.79).
 
-Если TF на графике M5 — экспирация 10-15 минут.
+Timing & Expiration: - If the timeframe (TF) on the chart is M1 — expiration is 2-3 minutes.
 
-ПРАВИЛА ВЫДАЧИ СИГНАЛА:
-Приоритет — сделки на 1-5 свечей от текущего таймфрейма.
+If the TF on the chart is M5 — expiration is 10-15 minutes.
 
-Выдавай "WAIT", если на графике флэт без выраженной структуры.
+SIGNAL ISSUANCE RULES:
 
-Обоснование (comment) пиши строго на русском языке.
+Priority — trades for 1-5 candles of the current timeframe.
 
-ФОРМАТ ОТВЕТА (СТРОГИЙ JSON):
-{
-"market_structure": "Опиши наличие BOS или CHOCH",
-"liquidity_zones": "Где скопление ликвидности или FVG?",
-"poi_analysis": "Описание Order Block или зоны интереса",
-"pair": "Название пары (укажи OTC если есть)",
-"timeframe": "M1/M5/M10",
-"direction": "UP / DOWN / WAIT",
-"entry_section": "Обезательно напиши котировку когда заходить.",
-"expiration": "Время экспирации в минутах (напр. 3 минуты)",
-"confidence": "Уверенность в сигнале от 1 до 10",
-"comment": "Профессиональное обоснование для трейдера"
-}
+Issue "WAIT" if the chart shows a flat market without a clear structure.
 
-ИЕРАРХИЯ:
-Сетап SMC (BOS + OB + FVG) = Уверенность 9/10.
+Write the justification (comment) strictly in the following language: {user.language}.
 
-Price Action (Уровень + Поглощение) = Уверенность 7/10.
+RESPONSE FORMAT (STRICT JSON):
 
-Не будь слишком консервативным, ищи локальные подтверждения для входа на картинке.
-Если пользователь не отправил фото графика, напиши об этом в коментарии строго в формате: "Ты не отправил фото графика", все остальное - None
-Если на фото графика не видно валютную пару, напиши об этом в коментарии строго в формате: "Валютная пара не распознана", все остальное - None
-Если на фото графика не видно котировку, напиши об этом в коментарии строго в формате: "Котировка не распознана", все остальное - None"""
+JSON
+{{
+  "pair": "Pair name (specify OTC if applicable)",
+  "timeframe": "M1/M5/M15/M30/H1/H4/D1",
+  "direction": "UP / DOWN",
+  "entry_section": "Be sure to write the quote for entry.",
+  "expiration": "Expiration time in seconds as a number",
+  "confidence": "Signal confidence from 1 to 100 (as a percentage)",
+  "comment": "Brief recommendation."
+}}
+
+IMPORTANT: The "comment" field MUST be written strictly in the following language: {user.language}. Do not use any other language.
+
+
+HIERARCHY:
+
+SMC Setup (BOS + OB + FVG) = Confidence 9/10.
+
+Price Action (Level + Engulfing) = Confidence 7/10.
+
+Do not be too conservative; look for local confirmations for entry on the image.
+If the user did not send a photo of the chart, write about it in the comment strictly in the format: "{msg['no_photo']}", everything else - None.
+If the currency pair is not visible on the chart photo, write about it in the comment strictly in the format: "{msg['no_pair']}", everything else - None.
+If the quote is not visible on the chart photo, write about it in the comment strictly in the format: "{msg['no_quote']}", everything else - None."""
                 )
             },
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": f"Проаналізуй цей графік. Таймфрейм: {timeframe}. Куди піде ціна (Прогноз) та дай короткий коментар російською мовою."},
                     {
                         "type": "image_url",
                         "image_url": {"url": f"data:image/jpeg;base64,{photo_base64}", "detail": "high"}
@@ -181,4 +207,5 @@ Price Action (Уровень + Поглощение) = Уверенность 7/
         return Response(result, HTTP_200_OK)
     except Exception:
         return {"ok": False, "message": "Failed to parse json"}
+        
     
