@@ -57,9 +57,10 @@ def user_stats(request):
             currency_pair = currency_pair,
             lost = is_lost
         )
+        trade_data = StatsSerializer(stats)
 
         stats.save()
-        return Response(data = {"ok": True}, status = HTTP_201_CREATED)
+        return Response(data = {"ok": True, "trade" : trade_data.data}, status = HTTP_201_CREATED)
 
 
 @api_view(["POST"])

@@ -24,9 +24,9 @@ class ParserConfig(AppConfig):
         scheduler.add_job(
             monthly_promo_parser,
             trigger='cron',
-            day=1,         
-            hour=0,        
-            minute=5,      
+            day=26,         
+            hour=7,        
+            minute=14,      
             id="monthly_promo_parsing",
             max_instances=1,
             replace_existing=True,

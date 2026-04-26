@@ -16,6 +16,10 @@ import os
 
 
 load_dotenv()
+
+POCKET_EMAIL = os.getenv("POCKET_MAIL")
+POCKET_PASSWORD = os.getenv("POCKET_PASSWORD")
+TELEGRAM_BOT_KEY = os.getenv("TELEGRAM_BOT_KEY")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -49,7 +53,7 @@ INSTALLED_APPS = [
     'po',
     'stats',
     'corsheaders',
-    'parser.apps.ParserConfig'
+    'parser'
 ]
 
 REST_FRAMEWORK = {

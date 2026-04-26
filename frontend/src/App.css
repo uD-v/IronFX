@@ -810,8 +810,147 @@ footer p {
   color: #fff;
 }
 
+/* Promo Codes Section */
+.promo-section {
+  margin-top: 2rem;
+}
+
+.promo-section h2 {
+  text-align: center;
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+
+.promo-empty {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.promo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.promo-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.promo-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+  border-radius: 4px 0 0 4px;
+}
+
+.promo-card:hover {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.promo-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.promo-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.promo-icon-wrap ion-icon {
+  font-size: 1.3rem;
+  color: #818cf8;
+}
+
+.promo-code-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.35rem 0.8rem;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px dashed rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.promo-code-label:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.promo-code-text {
+  font-family: 'Courier New', monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 1.5px;
+}
+
+.promo-copy-icon {
+  font-size: 0.95rem;
+  color: #64748b;
+  transition: color 0.2s;
+}
+
+.promo-code-label:hover .promo-copy-icon {
+  color: #3b82f6;
+}
+
+.promo-description {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 0.6rem 0;
+  padding-left: 0.2rem;
+}
+
+.promo-validity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.promo-validity ion-icon {
+  font-size: 0.95rem;
+  color: #475569;
+}
+
 @media (max-width: 768px) {
   .toast-container {
     width: calc(100% - 40px);
+  }
+
+  .promo-card {
+    padding: 1rem 1.2rem;
+  }
+
+  .promo-code-text {
+    font-size: 0.95rem;
   }
 }

@@ -83,7 +83,11 @@ const t = {
     menuGetSignals: "Get Signals",
     loadingDashboard: "Loading dashboard data...",
     lastFewTrades: "Last few trades:",
-    viewAllHistory: "View all trading history"
+    viewAllHistory: "View all trading history",
+    promoCodes: "Promo Codes",
+    promoNoData: "No promo codes available at this time.",
+    promoValid: "Valid:",
+    promoCopied: "Promo code copied!"
   },
   ru: {
     tradingHistory: "История сделок",
@@ -130,7 +134,11 @@ const t = {
     menuGetSignals: "Получить сигналы",
     loadingDashboard: "Загрузка данных дашборда...",
     lastFewTrades: "Последние сделки:",
-    viewAllHistory: "Посмотреть всю историю сделок"
+    viewAllHistory: "Посмотреть всю историю сделок",
+    promoCodes: "Промокоды",
+    promoNoData: "На данный момент промокоды недоступны.",
+    promoValid: "Действителен:",
+    promoCopied: "Промокод скопирован!"
   }
 };
 
@@ -187,7 +195,7 @@ function TradingHistory({ userStats, lang = 'en' }) {
         </div>
         {visibleCount < tradesData.length ? (
           <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-            <span 
+            <span
               onClick={() => setVisibleCount(prev => prev + 10)}
               style={{
                 color: '#94a3b8',
@@ -224,10 +232,40 @@ function App() {
   // User and Stats State
   const [userData, setUserData] = useState(null);
   const [userStats, setUserStats] = useState([]);
+  const [promoCodes, setPromoCodes] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const API_BASE_URL = 'https://fffc-91-196-55-126.ngrok-free.app';
-  const TG_ID = "123";
+  const API_BASE_URL = 'https://hccl676m-8000.euw.devtunnels.ms';
+  const tg = window.Telegram?.WebApp;
+  const TG_INIT_DATA = tg?.initData || "";
+  const tgUser = tg?.initDataUnsafe?.user;
+  const displayName = tgUser?.username || tgUser?.first_name || "";
+
+  useEffect(() => {
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+  }, []);
+
+  // Block access if not opened from Telegram
+  if (!TG_INIT_DATA) {
+    return (
+      <div className="app-wrapper">
+        <div className="bg-gradients">
+          <div className="glow-circle glow-1"></div>
+          <div className="glow-circle glow-2"></div>
+        </div>
+        <div className="app-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', textAlign: 'center' }}>
+          <div>
+            <ion-icon name="lock-closed-outline" style={{ fontSize: '4rem', color: '#3b82f6', marginBottom: '1.5rem' }}></ion-icon>
+            <h1 style={{ color: '#fff', fontSize: '1.8rem', marginBottom: '0.8rem' }}>Access Denied</h1>
+            <p style={{ color: '#94a3b8', fontSize: '1rem', lineHeight: '1.6', maxWidth: '320px', margin: '0 auto' }}>This application is only available through the Telegram app.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const toggleLanguage = async (newLang) => {
     setIsLangMenuOpen(false);
@@ -239,7 +277,7 @@ function App() {
         headers: {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "true",
-          "tgInitData": TG_ID
+          "tgInitData": TG_INIT_DATA
         },
         body: JSON.stringify({ language: newLang })
       });
@@ -253,12 +291,13 @@ function App() {
       try {
         const headers = {
           "ngrok-skip-browser-warning": "true",
-          "tgInitData": TG_ID
+          "tgInitData": TG_INIT_DATA
         };
 
-        const [verifyRes, statsRes] = await Promise.all([
+        const [verifyRes, statsRes, promoRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/user/verify/`, { headers }),
-          fetch(`${API_BASE_URL}/api/user/stats/`, { headers })
+          fetch(`${API_BASE_URL}/api/user/stats/`, { headers }),
+          fetch(`${API_BASE_URL}/api/po/promocodes/`, { headers }).catch(() => null)
         ]);
 
         const verifyData = await verifyRes.json();
@@ -266,6 +305,17 @@ function App() {
           setUserData(verifyData.user);
           if (verifyData.user.language) {
             setLang(verifyData.user.language);
+          }
+        }
+
+        if (promoRes && promoRes.ok) {
+          try {
+            const promoData = await promoRes.json();
+            if (promoData.ok && Array.isArray(promoData.promos)) {
+              setPromoCodes(promoData.promos);
+            }
+          } catch (e) {
+            console.error("Error parsing promo codes:", e);
           }
         }
 
@@ -320,7 +370,7 @@ function App() {
         .replace('{largeNum}', randomInt(10, 500));
       newsList.push(text);
     }
-    
+
     return newsList.sort(() => Math.random() - 0.5);
   };
 
@@ -362,14 +412,14 @@ function App() {
   const timeframes = [
     "5s", "15s", "30s", "1min", "3min", "5min", "10min", "15min", "30min", "1H", "2H", "4H", "1D"
   ];
-  
+
   // Toast Notification System (Stackable)
   const [toasts, setToasts] = useState([]);
 
   const showToast = (message, type = 'success') => {
     const id = Date.now() + Math.random();
     setToasts(prev => [...prev, { id, message, type }]);
-    
+
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 5000);
@@ -378,11 +428,11 @@ function App() {
   const closeToast = (id) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
-  
+
   // Mobile swipe-to-close logic
   const [touchStartY, setTouchStartY] = useState(0);
   const [touchCurrentY, setTouchCurrentY] = useState(0);
-  
+
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -416,17 +466,17 @@ function App() {
     }
     setIsAnalyzing(true);
     setSignalResult(null);
-    
+
     const formData = new FormData();
     formData.append("photo", selectedImageFile);
     formData.append("timeframe", selectedTimeframe);
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/user/signal/`, {
         method: 'POST',
         headers: {
           "ngrok-skip-browser-warning": "true",
-          "tgInitData": TG_ID
+          "tgInitData": TG_INIT_DATA
         },
         body: formData
       });
@@ -435,9 +485,9 @@ function App() {
         data.entry_time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         setSignalResult(data);
         if (data.limit !== undefined) {
-          setUserData(prev => ({...prev, limit: data.limit}));
+          setUserData(prev => ({ ...prev, limit: data.limit }));
         }
-        
+
         // Show error status if the photo is not a valid graph
         if (!data.direction || data.direction === "None" || data.direction === "WAIT" || (data.comment && (data.comment.includes("не отправил") || data.comment.includes("не распознана")))) {
           showToast(l.toastInvalidChart, "error");
@@ -455,14 +505,14 @@ function App() {
 
   const handleFeedback = async (isLoss) => {
     if (!signalResult) return;
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/user/stats/`, {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "true",
-          "tgInitData": TG_ID
+          "tgInitData": TG_INIT_DATA
         },
         body: JSON.stringify({
           currency_pair: signalResult.pair || "Unknown",
@@ -553,7 +603,7 @@ function App() {
         <div className="glow-circle glow-1"></div>
         <div className="glow-circle glow-2"></div>
         <div className="glow-circle glow-3"></div>
-        
+
         {/* Decorative sharp circles */}
         <div className="sharp-circle sharp-1"></div>
         <div className="sharp-circle sharp-2"></div>
@@ -565,8 +615,8 @@ function App() {
         <header className={isSticky ? 'header-scrolled' : ''}>
           {/* News Ticker Bar */}
           <div className="news-ticker">
-            <div 
-              className="news-ticker-track" 
+            <div
+              className="news-ticker-track"
               style={{ transform: `translateY(-${currentNewsIndex * 24}px)` }}
             >
               {newsItems.map((news, i) => (
@@ -576,27 +626,27 @@ function App() {
           </div>
 
           <div className="header-inner">
-            <div className="logo" style={{cursor: 'pointer'}}>
+            <div className="logo" style={{ cursor: 'pointer' }}>
               <Link to="/">
                 <img src={logoUrl} alt="IronFX" />
               </Link>
             </div>
             <div className="header-icons">
-              <div className="lang-container" style={{position: 'relative'}}>
+              <div className="lang-container" style={{ position: 'relative' }}>
                 <ion-icon name="globe-outline" onClick={() => { setIsLangMenuOpen(!isLangMenuOpen); setIsMenuOpen(false); }} style={{ fontSize: '1.4rem', cursor: 'pointer' }}></ion-icon>
                 {isLangMenuOpen && (
-                  <div className="dropdown-menu" style={{position: 'absolute', top: '100%', right: '0', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px', zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '120px', marginTop: '10px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)'}}>
-                    <div onClick={() => toggleLanguage('en')} style={{padding: '0.5rem 1rem', color: lang === 'en' ? '#3b82f6' : '#e2e8f0', background: lang === 'en' ? 'rgba(59,130,246,0.1)' : 'transparent', borderRadius: '4px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s'}}>English</div>
-                    <div onClick={() => toggleLanguage('ru')} style={{padding: '0.5rem 1rem', color: lang === 'ru' ? '#3b82f6' : '#e2e8f0', background: lang === 'ru' ? 'rgba(59,130,246,0.1)' : 'transparent', borderRadius: '4px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s'}}>Русский</div>
+                  <div className="dropdown-menu" style={{ position: 'absolute', top: '100%', right: '0', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '8px', zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '120px', marginTop: '10px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+                    <div onClick={() => toggleLanguage('en')} style={{ padding: '0.5rem 1rem', color: lang === 'en' ? '#3b82f6' : '#e2e8f0', background: lang === 'en' ? 'rgba(59,130,246,0.1)' : 'transparent', borderRadius: '4px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}>English</div>
+                    <div onClick={() => toggleLanguage('ru')} style={{ padding: '0.5rem 1rem', color: lang === 'ru' ? '#3b82f6' : '#e2e8f0', background: lang === 'ru' ? 'rgba(59,130,246,0.1)' : 'transparent', borderRadius: '4px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s' }}>Русский</div>
                   </div>
                 )}
               </div>
-              <div className="menu-container" style={{position: 'relative'}}>
+              <div className="menu-container" style={{ position: 'relative' }}>
                 <ion-icon name="menu-outline" onClick={() => { setIsMenuOpen(!isMenuOpen); setIsLangMenuOpen(false); }} style={{ cursor: 'pointer' }}></ion-icon>
                 {isMenuOpen && (
-                  <div className="dropdown-menu" style={{position: 'absolute', top: '100%', right: '0', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '200px', marginTop: '10px'}}>
-                    <Link to="/trading-history" onClick={() => setIsMenuOpen(false)} style={{color: '#e2e8f0', padding: '0.5rem', borderRadius: '4px', textDecoration: 'none'}}>{l.menuTradingHistory}</Link>
-                    <Link to="/" onClick={() => setIsMenuOpen(false)} style={{color: '#fff', background: '#3b82f6', padding: '0.5rem', borderRadius: '4px', textDecoration: 'none', textAlign: 'center', marginTop: '0.5rem', fontWeight: '500'}}>{l.menuGetSignals}</Link>
+                  <div className="dropdown-menu" style={{ position: 'absolute', top: '100%', right: '0', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '200px', marginTop: '10px' }}>
+                    <Link to="/trading-history" onClick={() => setIsMenuOpen(false)} style={{ color: '#e2e8f0', padding: '0.5rem', borderRadius: '4px', textDecoration: 'none' }}>{l.menuTradingHistory}</Link>
+                    <Link to="/" onClick={() => setIsMenuOpen(false)} style={{ color: '#fff', background: '#3b82f6', padding: '0.5rem', borderRadius: '4px', textDecoration: 'none', textAlign: 'center', marginTop: '0.5rem', fontWeight: '500' }}>{l.menuGetSignals}</Link>
                   </div>
                 )}
               </div>
@@ -606,7 +656,7 @@ function App() {
 
         <Routes>
           <Route path="/trading-history" element={<TradingHistory userStats={userStats} lang={lang} />} />
-          
+
           <Route path="/" element={
             isLoadingData ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', color: '#fff' }}>
@@ -614,205 +664,245 @@ function App() {
                 <p style={{ marginLeft: '1rem' }}>{l.loadingDashboard}</p>
               </div>
             ) : (
-            <>
-        {/* Grouping trades text and stats bar closely */}
-        {!selectedImage && (
-          <div className="dashboard-stats-group" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Dashboard Top */}
-            <div className="dashboard-top">
-              <div className="greeting">
-                <h1>{l.goodEvening}, <span>{l.trader}</span></h1>
-                <p>{l.totalTrades.split('{count}')[0]}<strong><span style={{ display: 'inline-block', minWidth: `${Math.max(1, userStats.length.toString().length)}ch`, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{activeTrades}</span></strong>{l.totalTrades.split('{count}')[1]}</p>
-              </div>
-            </div>
-
-            {/* Stats Progress */}
-            <div className="stats-container">
-              <div className="stat-item">
-                <p>{l.signalsUsed}: <span style={{ display: 'inline-block', minWidth: '2ch', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{Math.round(activeSignalsUsedRaw)}</span>/{signalsTotal}</p>
-                <div className="progress-bar-bg">
-                  <div 
-                    className="progress-fill" 
-                    style={{ 
-                      width: `${activeSignalsPercentage}%`,
-                      background: `linear-gradient(90deg, hsl(${activeSignalsHue}, 80%, 35%), hsl(${activeSignalsHue}, 80%, 50%))` 
-                    }}
-                  ></div>
-                </div>
-              </div>
-              <div className="stat-item">
-                <p>{l.avgConfidence}: {activeConfidenceRaw.toFixed(1)}%</p>
-                <div className="progress-bar-bg">
-                  <div className="progress-fill fill-blue" style={{ width: `${activeConfidenceRaw}%` }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Controls */}
-        <div className="controls-container" style={{ marginTop: '2rem' }}>
-          <div className="control-group" style={{ position: 'relative', width: '100%' }}>
-            <label>{l.timeframe}</label>
-            <div className="select-box" style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => setIsTimeframeSelectorOpen(!isTimeframeSelectorOpen)}>
-              {selectedTimeframe}
-              <ion-icon name="chevron-down-outline"></ion-icon>
-            </div>
-            {isTimeframeSelectorOpen && (
-              <div className="custom-dropdown" style={{position: 'absolute', top: '100%', left: 0, width: '100%', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', zIndex: 100, marginTop: '8px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)'}}>
-                {timeframes.map(tf => (
-                  <div key={tf} className="dropdown-item" onClick={() => {setSelectedTimeframe(tf); setIsTimeframeSelectorOpen(false);}} style={{padding: '0.6rem 0.8rem', fontSize: '0.85rem', cursor: 'pointer', borderRight: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: selectedTimeframe === tf ? '#3b82f6' : '#e2e8f0', background: selectedTimeframe === tf ? 'rgba(59,130,246,0.1)' : 'transparent', textAlign: 'center', transition: 'background 0.2s'}}>
-                    {tf}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {isAnalyzing ? (
-          <div className="upload-area analyzing-state" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '3rem 1rem', marginTop: '0.5rem' }}>
-            <div className="loader" style={{ marginBottom: '1rem', width: '40px', height: '40px', borderTopColor: '#3b82f6', borderLeftColor: '#3b82f6' }}></div>
-            <h3 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>{l.analyzing}</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{l.pleaseWait}</p>
-          </div>
-        ) : signalResult ? (
-          (!signalResult.direction || signalResult.direction === "None" || signalResult.direction === "WAIT" || (signalResult.comment && (signalResult.comment.includes("не отправил") || signalResult.comment.includes("не распознана")))) ? (
-            <div className="signal-result-card" style={{ background: 'rgba(30,41,59,0.8)', borderRadius: '16px', padding: '2rem 1.5rem', border: '1px solid rgba(239,68,68,0.3)', marginTop: '0.5rem', textAlign: 'center' }}>
-              <div style={{ color: '#ef4444', fontSize: '3rem', marginBottom: '1rem' }}>
-                <ion-icon name="warning-outline"></ion-icon>
-              </div>
-              <h3 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1.2rem' }}>{l.analysisFailedTitle}</h3>
-              <p style={{ color: '#94a3b8', marginBottom: '1.5rem', lineHeight: '1.5' }}>{signalResult.comment || l.analysisFailedDesc}</p>
-              <button onClick={handleCloseSignal} style={{ padding: '0.8rem 1.5rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}>
-                {l.retakePhoto}
-              </button>
-            </div>
-          ) : (
-            <div className="signal-result-card" style={{ background: 'rgba(30,41,59,0.8)', borderRadius: '16px', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.1)', marginTop: '0.5rem' }}>
-              <h3 style={{ color: '#fff', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>{l.signalResult}</h3>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div className="signal-detail">
-                <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.pair}</span>
-                <div style={{ color: '#fff', fontWeight: 'bold' }}>{signalResult.pair}</div>
-              </div>
-              <div className="signal-detail">
-                <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.direction}</span>
-                <div style={{ color: signalResult.direction === 'UP' ? '#22c55e' : '#ef4444', fontWeight: 'bold' }}>{signalResult.direction}</div>
-              </div>
-
-              <div className="signal-detail">
-                <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.expiration}</span>
-                <div style={{ color: '#fff', fontWeight: 'bold' }}>
-                  {signalResult.expiration && !isNaN(parseInt(signalResult.expiration)) 
-                    ? `${Math.max(1, Math.round(parseInt(signalResult.expiration) / 60))} ${l.min}` 
-                    : signalResult.expiration || 'N/A'}
-                </div>
-              </div>
-              <div className="signal-detail">
-                <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.entryTime}</span>
-                <div style={{ color: '#fff', fontWeight: 'bold' }}>{signalResult.entry_time || l.now}</div>
-              </div>
-              <div className="signal-detail">
-                <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.timeframe}</span>
-                <div style={{ color: '#fff', fontWeight: 'bold' }}>{signalResult.timeframe || selectedTimeframe}</div>
-              </div>
-            </div>
-            
-            <div style={{ marginBottom: '1.5rem' }}>
-              <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.confidence}</span>
-              <div className="progress-bar-bg" style={{ marginTop: '0.5rem', height: '8px' }}>
-                <div className="progress-fill fill-blue" style={{ width: `${signalResult.confidence || 0}%`, background: '#3b82f6' }}></div>
-              </div>
-              <div style={{ textAlign: 'right', color: '#fff', fontSize: '0.85rem', marginTop: '0.2rem' }}>{signalResult.confidence}%</div>
-            </div>
-            
-            {signalResult.comment && (
-              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
-                <span style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '0.5rem' }}>{l.aiComment}</span>
-                <p style={{ color: '#e2e8f0', fontSize: '0.9rem', lineHeight: '1.4' }}>{signalResult.comment}</p>
-              </div>
-            )}
-            
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
-              <h4 style={{ color: '#fff', marginBottom: '1rem', textAlign: 'center', fontSize: '0.95rem' }}>{l.wasProfitable}</h4>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button onClick={() => handleFeedback(false)} style={{ flex: 1, padding: '0.8rem', background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}>{l.profit}</button>
-                <button onClick={() => handleFeedback(true)} style={{ flex: 1, padding: '0.8rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}>{l.loss}</button>
-              </div>
-              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-                <span onClick={handleCloseSignal} style={{ color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>{l.closeAndUpload}</span>
-              </div>
-            </div>
-          </div>
-          )
-        ) : (
-          <>
-            {/* Upload Area */}
-            <div 
-              className={`upload-area ${selectedImage ? 'has-image' : ''}`} 
-              onClick={() => !selectedImage && setIsUploadModalOpen(true)}
-            >
-              {selectedImage ? (
-                <div className="uploaded-image-container">
-                  <img src={selectedImage} alt="Uploaded chart" className="uploaded-image-preview" />
-                  <button className="delete-img-btn" onClick={clearImage}>
-                    <ion-icon name="close-circle"></ion-icon>
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <ion-icon name="image-outline" class="upload-icon"></ion-icon>
-                  <h3>{l.uploadChart}</h3>
-                  <p>{l.maxSize}</p>
-                </>
-              )}
-            </div>
-
-            {/* Action Button */}
-            {selectedImage && (
-              <button className="btn-action" onClick={handleGetSignal}>{l.getSignal}</button>
-            )}
-          </>
-        )}
-
-        {/* Trades Table */}
-        <div className="trades-section">
-          <h2>{l.lastFewTrades}</h2>
-          <div className="trade-list">
-            {tradesData.map(trade => {
-              const isLoss = trade.pl.startsWith("-");
-              const plClass = isLoss ? "trade-sell" : "trade-buy";
-
-              return (
-                <div className="trade-card" key={trade.id}>
-                  <div className="trade-info">
-                    <div className={`trade-icon ${isLoss ? 'loss' : 'profit'}`}>
-                      <ion-icon name={isLoss ? 'arrow-down-outline' : 'arrow-up-outline'}></ion-icon>
+              <>
+                {/* Grouping trades text and stats bar closely */}
+                {!selectedImage && (
+                  <div className="dashboard-stats-group" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {/* Dashboard Top */}
+                    <div className="dashboard-top">
+                      <div className="greeting">
+                        <h1>{l.goodEvening}, <span>{displayName}</span></h1>
+                        <p>{l.totalTrades.split('{count}')[0]}<strong><span style={{ display: 'inline-block', minWidth: `${Math.max(1, userStats.length.toString().length)}ch`, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{activeTrades}</span></strong>{l.totalTrades.split('{count}')[1]}</p>
+                      </div>
                     </div>
-                    <div>
-                      <span className="trade-asset">{trade.asset}</span>
-                      <span className="trade-time">{trade.time}</span>
+
+                    {/* Stats Progress */}
+                    <div className="stats-container">
+                      <div className="stat-item">
+                        <p>{l.signalsUsed}: <span style={{ display: 'inline-block', minWidth: '2ch', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{Math.round(activeSignalsUsedRaw)}</span>/{signalsTotal}</p>
+                        <div className="progress-bar-bg">
+                          <div
+                            className="progress-fill"
+                            style={{
+                              width: `${activeSignalsPercentage}%`,
+                              background: `linear-gradient(90deg, hsl(${activeSignalsHue}, 80%, 35%), hsl(${activeSignalsHue}, 80%, 50%))`
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                      <div className="stat-item">
+                        <p>{l.avgConfidence}: {activeConfidenceRaw.toFixed(1)}%</p>
+                        <div className="progress-bar-bg">
+                          <div className="progress-fill fill-blue" style={{ width: `${activeConfidenceRaw}%` }}></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="trade-details">
-                    <span className={`trade-pl ${plClass}`}>
-                      {isLoss ? l.loss : l.profit}
-                    </span>
+                )}
+
+                {/* Controls */}
+                <div className="controls-container" style={{ marginTop: '2rem' }}>
+                  <div className="control-group" style={{ position: 'relative', width: '100%' }}>
+                    <label>{l.timeframe}</label>
+                    <div className="select-box" style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => setIsTimeframeSelectorOpen(!isTimeframeSelectorOpen)}>
+                      {selectedTimeframe}
+                      <ion-icon name="chevron-down-outline"></ion-icon>
+                    </div>
+                    {isTimeframeSelectorOpen && (
+                      <div className="custom-dropdown" style={{ position: 'absolute', top: '100%', left: 0, width: '100%', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', zIndex: 100, marginTop: '8px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                        {timeframes.map(tf => (
+                          <div key={tf} className="dropdown-item" onClick={() => { setSelectedTimeframe(tf); setIsTimeframeSelectorOpen(false); }} style={{ padding: '0.6rem 0.8rem', fontSize: '0.85rem', cursor: 'pointer', borderRight: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: selectedTimeframe === tf ? '#3b82f6' : '#e2e8f0', background: selectedTimeframe === tf ? 'rgba(59,130,246,0.1)' : 'transparent', textAlign: 'center', transition: 'background 0.2s' }}>
+                            {tf}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-            <Link to="/trading-history" style={{ color: '#94a3b8', fontSize: '0.95rem', textDecoration: 'none', cursor: 'pointer' }}>
-              {l.viewAllHistory}
-            </Link>
-          </div>
-        </div>
-            </>
-          )
+
+                {isAnalyzing ? (
+                  <div className="upload-area analyzing-state" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '3rem 1rem', marginTop: '0.5rem' }}>
+                    <div className="loader" style={{ marginBottom: '1rem', width: '40px', height: '40px', borderTopColor: '#3b82f6', borderLeftColor: '#3b82f6' }}></div>
+                    <h3 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>{l.analyzing}</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{l.pleaseWait}</p>
+                  </div>
+                ) : signalResult ? (
+                  (!signalResult.direction || signalResult.direction === "None" || signalResult.direction === "WAIT" || (signalResult.comment && (signalResult.comment.includes("не отправил") || signalResult.comment.includes("не распознана")))) ? (
+                    <div className="signal-result-card" style={{ background: 'rgba(30,41,59,0.8)', borderRadius: '16px', padding: '2rem 1.5rem', border: '1px solid rgba(239,68,68,0.3)', marginTop: '0.5rem', textAlign: 'center' }}>
+                      <div style={{ color: '#ef4444', fontSize: '3rem', marginBottom: '1rem' }}>
+                        <ion-icon name="warning-outline"></ion-icon>
+                      </div>
+                      <h3 style={{ color: '#fff', marginBottom: '0.5rem', fontSize: '1.2rem' }}>{l.analysisFailedTitle}</h3>
+                      <p style={{ color: '#94a3b8', marginBottom: '1.5rem', lineHeight: '1.5' }}>{signalResult.comment || l.analysisFailedDesc}</p>
+                      <button onClick={handleCloseSignal} style={{ padding: '0.8rem 1.5rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}>
+                        {l.retakePhoto}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="signal-result-card" style={{ background: 'rgba(30,41,59,0.8)', borderRadius: '16px', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.1)', marginTop: '0.5rem' }}>
+                      <h3 style={{ color: '#fff', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>{l.signalResult}</h3>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <div className="signal-detail">
+                          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.pair}</span>
+                          <div style={{ color: '#fff', fontWeight: 'bold' }}>{signalResult.pair}</div>
+                        </div>
+                        <div className="signal-detail">
+                          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.direction}</span>
+                          <div style={{ color: signalResult.direction === 'UP' ? '#22c55e' : '#ef4444', fontWeight: 'bold' }}>{signalResult.direction}</div>
+                        </div>
+
+                        <div className="signal-detail">
+                          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.expiration}</span>
+                          <div style={{ color: '#fff', fontWeight: 'bold' }}>
+                            {signalResult.expiration && !isNaN(parseInt(signalResult.expiration))
+                              ? `${Math.max(1, Math.round(parseInt(signalResult.expiration) / 60))} ${l.min}`
+                              : signalResult.expiration || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="signal-detail">
+                          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.entryTime}</span>
+                          <div style={{ color: '#fff', fontWeight: 'bold' }}>{signalResult.entry_time || l.now}</div>
+                        </div>
+                        <div className="signal-detail">
+                          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.timeframe}</span>
+                          <div style={{ color: '#fff', fontWeight: 'bold' }}>{signalResult.timeframe || selectedTimeframe}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{l.confidence}</span>
+                        <div className="progress-bar-bg" style={{ marginTop: '0.5rem', height: '8px' }}>
+                          <div className="progress-fill fill-blue" style={{ width: `${signalResult.confidence || 0}%`, background: '#3b82f6' }}></div>
+                        </div>
+                        <div style={{ textAlign: 'right', color: '#fff', fontSize: '0.85rem', marginTop: '0.2rem' }}>{signalResult.confidence}%</div>
+                      </div>
+
+                      {signalResult.comment && (
+                        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                          <span style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '0.5rem' }}>{l.aiComment}</span>
+                          <p style={{ color: '#e2e8f0', fontSize: '0.9rem', lineHeight: '1.4' }}>{signalResult.comment}</p>
+                        </div>
+                      )}
+
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
+                        <h4 style={{ color: '#fff', marginBottom: '1rem', textAlign: 'center', fontSize: '0.95rem' }}>{l.wasProfitable}</h4>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button onClick={() => handleFeedback(false)} style={{ flex: 1, padding: '0.8rem', background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}>{l.profit}</button>
+                          <button onClick={() => handleFeedback(true)} style={{ flex: 1, padding: '0.8rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}>{l.loss}</button>
+                        </div>
+                        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                          <span onClick={handleCloseSignal} style={{ color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}>{l.closeAndUpload}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    {/* Upload Area */}
+                    <div
+                      className={`upload-area ${selectedImage ? 'has-image' : ''}`}
+                      onClick={() => !selectedImage && setIsUploadModalOpen(true)}
+                    >
+                      {selectedImage ? (
+                        <div className="uploaded-image-container">
+                          <img src={selectedImage} alt="Uploaded chart" className="uploaded-image-preview" />
+                          <button className="delete-img-btn" onClick={clearImage}>
+                            <ion-icon name="close-circle"></ion-icon>
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <ion-icon name="image-outline" class="upload-icon"></ion-icon>
+                          <h3>{l.uploadChart}</h3>
+                          <p>{l.maxSize}</p>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Action Button */}
+                    {selectedImage && (
+                      <button className="btn-action" onClick={handleGetSignal}>{l.getSignal}</button>
+                    )}
+                  </>
+                )}
+
+                {/* Trades Table */}
+                <div className="trades-section">
+                  <h2>{l.lastFewTrades}</h2>
+                  <div className="trade-list">
+                    {tradesData.map(trade => {
+                      const isLoss = trade.pl.startsWith("-");
+                      const plClass = isLoss ? "trade-sell" : "trade-buy";
+
+                      return (
+                        <div className="trade-card" key={trade.id}>
+                          <div className="trade-info">
+                            <div className={`trade-icon ${isLoss ? 'loss' : 'profit'}`}>
+                              <ion-icon name={isLoss ? 'arrow-down-outline' : 'arrow-up-outline'}></ion-icon>
+                            </div>
+                            <div>
+                              <span className="trade-asset">{trade.asset}</span>
+                              <span className="trade-time">{trade.time}</span>
+                            </div>
+                          </div>
+                          <div className="trade-details">
+                            <span className={`trade-pl ${plClass}`}>
+                              {isLoss ? l.loss : l.profit}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                    <Link to="/trading-history" style={{ color: '#94a3b8', fontSize: '0.95rem', textDecoration: 'none', cursor: 'pointer' }}>
+                      {l.viewAllHistory}
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Promo Codes Section */}
+                <div className="promo-section">
+                  <h2>{l.promoCodes}</h2>
+                  {promoCodes.length === 0 ? (
+                    <p className="promo-empty">{l.promoNoData}</p>
+                  ) : (
+                    <div className="promo-list">
+                      {promoCodes.map((promo) => (
+                        <div className="promo-card" key={promo.id || promo.code}>
+                          <div className="promo-card-header">
+                            <div className="promo-icon-wrap">
+                              <ion-icon name="gift-outline"></ion-icon>
+                            </div>
+                            <div className="promo-code-label"
+                              onClick={() => {
+                                navigator.clipboard.writeText(promo.code).then(() => {
+                                  showToast(l.promoCopied, 'success');
+                                }).catch(() => { });
+                              }}
+                              title="Click to copy"
+                            >
+                              <span className="promo-code-text">{promo.code}</span>
+                              <ion-icon name="copy-outline" class="promo-copy-icon"></ion-icon>
+                            </div>
+                          </div>
+                          {promo.info && (
+                            <p className="promo-description">{promo.info}</p>
+                          )}
+                          {promo.expiration && (
+                            <div className="promo-validity">
+                              <ion-icon name="calendar-outline"></ion-icon>
+                              <span>{l.promoValid} {promo.expiration}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )
           } />
         </Routes>
 
@@ -830,8 +920,8 @@ function App() {
       {/* Upload Modal Overlay */}
       {isUploadModalOpen && (
         <div className="upload-modal-overlay" onClick={() => setIsUploadModalOpen(false)}>
-          <div 
-            className="upload-modal" 
+          <div
+            className="upload-modal"
             onClick={e => e.stopPropagation()}
             style={{ transform: `translateY(${touchCurrentY}px)` }}
             onTouchStart={handleTouchStart}
@@ -842,9 +932,9 @@ function App() {
             <button className="modal-close-desktop" onClick={() => setIsUploadModalOpen(false)}>
               <ion-icon name="close-outline"></ion-icon>
             </button>
-            
+
             <h3 className="modal-title">Upload Image</h3>
-            
+
             <div className="modal-options">
               <button className="modal-option-btn" onClick={() => cameraInputRef.current.click()}>
                 <ion-icon name="camera-outline"></ion-icon>
