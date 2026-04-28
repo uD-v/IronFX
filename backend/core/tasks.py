@@ -27,7 +27,10 @@ def monthly_promo_parser():
           for item in new_codes:
               obj, created = PromoCode.objects.get_or_create(
                   code=item['code'].strip(),
-                  defaults={'description': item.get('desc', 'Промокод з парсера')}
+                  defaults={
+                      'info': item.get('info', ''),
+                      'expiration': item.get('expiration', ''),
+                  }
               )
               if created:
                   added_count += 1

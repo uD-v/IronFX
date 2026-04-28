@@ -45,7 +45,10 @@ const t = {
     noMoreTrades: "No more trades in history.",
     profit: "PROFIT",
     loss: "LOSS",
+    goodMorning: "Good morning",
+    goodAfternoon: "Good afternoon",
     goodEvening: "Good evening",
+    goodNight: "Good night",
     trader: "Trader",
     totalTrades: "You have made total of {count} trades with us already!",
     signalsUsed: "Signals used",
@@ -87,7 +90,8 @@ const t = {
     promoCodes: "Promo Codes",
     promoNoData: "No promo codes available at this time.",
     promoValid: "Valid:",
-    promoCopied: "Promo code copied!"
+    promoCopied: "Promo code copied!",
+    menuSupport: "Support"
   },
   ru: {
     tradingHistory: "История сделок",
@@ -96,7 +100,10 @@ const t = {
     noMoreTrades: "Больше нет сделок в истории.",
     profit: "PROFIT",
     loss: "LOSS",
+    goodMorning: "Доброе утро",
+    goodAfternoon: "Добрый день",
     goodEvening: "Добрый вечер",
+    goodNight: "Доброй ночи",
     trader: "Трейдер",
     totalTrades: "Вы уже совершили {count} сделок с нами!",
     signalsUsed: "Использовано сигналов",
@@ -138,8 +145,17 @@ const t = {
     promoCodes: "Промокоды",
     promoNoData: "На данный момент промокоды недоступны.",
     promoValid: "Действителен:",
-    promoCopied: "Промокод скопирован!"
+    promoCopied: "Промокод скопирован!",
+    menuSupport: "Поддержка"
   }
+};
+
+const getGreeting = (l) => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return l.goodMorning;
+  if (hour >= 12 && hour < 17) return l.goodAfternoon;
+  if (hour >= 17 && hour < 23) return l.goodEvening;
+  return l.goodNight;
 };
 
 function TradingHistory({ userStats, lang = 'en' }) {
@@ -235,7 +251,7 @@ function App() {
   const [promoCodes, setPromoCodes] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const API_BASE_URL = 'https://hccl676m-8000.euw.devtunnels.ms';
+  const API_BASE_URL = 'https://ironfxapi.mudev.agency';
   const tg = window.Telegram?.WebApp;
   const TG_INIT_DATA = tg?.initData || "";
   const tgUser = tg?.initDataUnsafe?.user;
@@ -335,7 +351,7 @@ function App() {
 
   // News Ticker Generator
   const generateNewsItems = (lang) => {
-    const pairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'BTC/USD', 'ETH/USD', 'SOL/USD', 'AAPL', 'TSLA', 'GOLD', 'OIL'];
+    const pairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AAPL', 'TSLA', 'GOLD', 'OIL'];
     const templates = [
       { en: "{users} users are online right now", ru: "Сейчас онлайн {users} пользователей" },
       { en: "Traders made ${profit} on {pair} today", ru: "Трейдеры заработали ${profit} на {pair} сегодня" },
@@ -462,8 +478,10 @@ function App() {
   const handleGetSignal = async () => {
     if (!selectedImageFile) {
       showToast("Please select a chart screenshot first.", "warning");
+      tg?.HapticFeedback?.notificationOccurred('warning');
       return;
     }
+    tg?.HapticFeedback?.impactOccurred('medium');
     setIsAnalyzing(true);
     setSignalResult(null);
 
@@ -484,6 +502,7 @@ function App() {
       if (data.ok) {
         data.entry_time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         setSignalResult(data);
+        tg?.HapticFeedback?.notificationOccurred('success');
         if (data.limit !== undefined) {
           setUserData(prev => ({ ...prev, limit: data.limit }));
         }
@@ -491,6 +510,7 @@ function App() {
         // Show error status if the photo is not a valid graph
         if (!data.direction || data.direction === "None" || data.direction === "WAIT" || (data.comment && (data.comment.includes("не отправил") || data.comment.includes("не распознана")))) {
           showToast(l.toastInvalidChart, "error");
+          tg?.HapticFeedback?.notificationOccurred('error');
         }
       } else {
         showToast(data.message || l.toastAnalyzeFail, "error");
@@ -522,6 +542,7 @@ function App() {
       const data = await response.json();
       if (data.ok) {
         showToast(l.toastTradeSaved, "success");
+        tg?.HapticFeedback?.notificationOccurred('success');
         // Construct trade locally if the backend didn't return it (old version)
         const newTrade = data.trade || {
           id: Date.now(),
@@ -534,6 +555,7 @@ function App() {
         clearImage();
       } else {
         showToast(data.message || l.toastTradeFail, "error");
+        tg?.HapticFeedback?.notificationOccurred('error');
       }
     } catch (error) {
       console.error("Feedback error:", error);
@@ -600,14 +622,94 @@ function App() {
 
       {/* Background aesthetics */}
       <div className="bg-gradients">
-        <div className="glow-circle glow-1"></div>
-        <div className="glow-circle glow-2"></div>
-        <div className="glow-circle glow-3"></div>
+        {/* Animated grid */}
+        <div className="bg-grid"></div>
 
-        {/* Decorative sharp circles */}
-        <div className="sharp-circle sharp-1"></div>
-        <div className="sharp-circle sharp-2"></div>
-        <div className="sharp-circle sharp-3"></div>
+        {/* Aurora light bands */}
+        <div className="aurora aurora-1"></div>
+        <div className="aurora aurora-2"></div>
+        <div className="aurora aurora-3"></div>
+
+        {/* Deep orbs for depth */}
+        <div className="depth-orb orb-1"></div>
+        <div className="depth-orb orb-2"></div>
+        <div className="depth-orb orb-3"></div>
+        <div className="depth-orb orb-4"></div>
+
+        {/* Abstract chart line – trading vibe */}
+        <svg className="bg-chart-line" viewBox="0 0 1440 400" preserveAspectRatio="none">
+          <polyline
+            fill="none"
+            stroke="rgba(59,130,246,0.08)"
+            strokeWidth="2"
+            points="0,300 80,280 160,310 240,250 320,270 400,200 480,230 560,180 640,210 720,150 800,190 880,120 960,160 1040,100 1120,140 1200,80 1280,130 1360,60 1440,100"
+          />
+          <polyline
+            fill="none"
+            stroke="rgba(99,102,241,0.05)"
+            strokeWidth="1.5"
+            points="0,320 80,340 160,290 240,330 320,280 400,310 480,240 560,280 640,220 720,260 800,200 880,240 960,180 1040,220 1120,160 1200,200 1280,140 1360,180 1440,120"
+          />
+        </svg>
+
+        {/* Candlestick silhouettes */}
+        <svg className="bg-candles" viewBox="0 0 1440 500" preserveAspectRatio="none">
+          {/* Candle wicks and bodies */}
+          <line x1="120" y1="150" x2="120" y2="350" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="112" y="200" width="16" height="80" rx="2" fill="rgba(34,197,94,0.04)" />
+
+          <line x1="240" y1="180" x2="240" y2="380" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="232" y="220" width="16" height="100" rx="2" fill="rgba(239,68,68,0.04)" />
+
+          <line x1="360" y1="120" x2="360" y2="320" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="352" y="160" width="16" height="90" rx="2" fill="rgba(34,197,94,0.04)" />
+
+          <line x1="480" y1="160" x2="480" y2="360" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="472" y="200" width="16" height="110" rx="2" fill="rgba(34,197,94,0.04)" />
+
+          <line x1="600" y1="140" x2="600" y2="340" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="592" y="190" width="16" height="70" rx="2" fill="rgba(239,68,68,0.04)" />
+
+          <line x1="840" y1="100" x2="840" y2="300" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="832" y="130" width="16" height="100" rx="2" fill="rgba(34,197,94,0.04)" />
+
+          <line x1="960" y1="130" x2="960" y2="330" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="952" y="180" width="16" height="80" rx="2" fill="rgba(239,68,68,0.04)" />
+
+          <line x1="1080" y1="80" x2="1080" y2="280" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="1072" y="110" width="16" height="120" rx="2" fill="rgba(34,197,94,0.04)" />
+
+          <line x1="1200" y1="100" x2="1200" y2="300" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="1192" y="140" width="16" height="90" rx="2" fill="rgba(239,68,68,0.04)" />
+
+          <line x1="1320" y1="60" x2="1320" y2="260" stroke="rgba(59,130,246,0.04)" strokeWidth="1" />
+          <rect x="1312" y="90" width="16" height="110" rx="2" fill="rgba(34,197,94,0.04)" />
+        </svg>
+
+        {/* Diagonal accent lines */}
+        <div className="diag-line diag-1"></div>
+        <div className="diag-line diag-2"></div>
+        <div className="diag-line diag-3"></div>
+
+        {/* Geometric shapes */}
+        <div className="geo-shape geo-hex-1"></div>
+        <div className="geo-shape geo-hex-2"></div>
+        <div className="geo-shape geo-diamond-1"></div>
+        <div className="geo-shape geo-ring-1"></div>
+        <div className="geo-shape geo-ring-2"></div>
+
+        {/* Floating particles */}
+        <div className="particle particle-1"></div>
+        <div className="particle particle-2"></div>
+        <div className="particle particle-3"></div>
+        <div className="particle particle-4"></div>
+        <div className="particle particle-5"></div>
+        <div className="particle particle-6"></div>
+        <div className="particle particle-7"></div>
+        <div className="particle particle-8"></div>
+
+        {/* Noise texture overlay */}
+        <div className="noise-overlay"></div>
       </div>
 
       <div className="app-content">
@@ -617,7 +719,7 @@ function App() {
           <div className="news-ticker">
             <div
               className="news-ticker-track"
-              style={{ transform: `translateY(-${currentNewsIndex * 24}px)` }}
+              style={{ transform: `translateY(-${currentNewsIndex * 36}px)` }}
             >
               {newsItems.map((news, i) => (
                 <div key={i} className="news-ticker-item">{news}</div>
@@ -646,6 +748,7 @@ function App() {
                 {isMenuOpen && (
                   <div className="dropdown-menu" style={{ position: 'absolute', top: '100%', right: '0', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '200px', marginTop: '10px' }}>
                     <Link to="/trading-history" onClick={() => setIsMenuOpen(false)} style={{ color: '#e2e8f0', padding: '0.5rem', borderRadius: '4px', textDecoration: 'none' }}>{l.menuTradingHistory}</Link>
+                    <a href="https://t.me/denys_fx" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)} style={{ color: '#e2e8f0', padding: '0.5rem', borderRadius: '4px', textDecoration: 'none' }}>{l.menuSupport}</a>
                     <Link to="/" onClick={() => setIsMenuOpen(false)} style={{ color: '#fff', background: '#3b82f6', padding: '0.5rem', borderRadius: '4px', textDecoration: 'none', textAlign: 'center', marginTop: '0.5rem', fontWeight: '500' }}>{l.menuGetSignals}</Link>
                   </div>
                 )}
@@ -671,7 +774,7 @@ function App() {
                     {/* Dashboard Top */}
                     <div className="dashboard-top">
                       <div className="greeting">
-                        <h1>{l.goodEvening}, <span>{displayName}</span></h1>
+                        <h1>{getGreeting(l)}, <span>{displayName}</span></h1>
                         <p>{l.totalTrades.split('{count}')[0]}<strong><span style={{ display: 'inline-block', minWidth: `${Math.max(1, userStats.length.toString().length)}ch`, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{activeTrades}</span></strong>{l.totalTrades.split('{count}')[1]}</p>
                       </div>
                     </div>
@@ -879,6 +982,7 @@ function App() {
                               onClick={() => {
                                 navigator.clipboard.writeText(promo.code).then(() => {
                                   showToast(l.promoCopied, 'success');
+                                  tg?.HapticFeedback?.impactOccurred('light');
                                 }).catch(() => { });
                               }}
                               title="Click to copy"
@@ -910,6 +1014,7 @@ function App() {
         <footer>
           <img src={logoUrl} alt="IronFX" />
           <p>© 2026 IronFX. All rights reserved.</p>
+          <a href="#" target="_blank" rel="noopener noreferrer" className="footer-support-link">{l.menuSupport}</a>
         </footer>
       </div>
 

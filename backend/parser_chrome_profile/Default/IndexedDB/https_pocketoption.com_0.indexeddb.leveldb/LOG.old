@@ -1,0 +1,13 @@
+2026/04/26-17:50:17.054 4674 Reusing MANIFEST C:\Users\albio\Desktop\muDev\IronFX\backend\parser_chrome_profile\Default\IndexedDB\https_pocketoption.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/04/26-17:50:17.054 4674 Recovering log #38
+2026/04/26-17:50:17.055 4674 Reusing old log C:\Users\albio\Desktop\muDev\IronFX\backend\parser_chrome_profile\Default\IndexedDB\https_pocketoption.com_0.indexeddb.leveldb/000038.log 
+2026/04/26-17:50:17.144 3164 Level-0 table #43: started
+2026/04/26-17:50:17.149 3164 Level-0 table #43: 2051 bytes OK
+2026/04/26-17:50:17.150 3164 Delete type=0 #38
+2026/04/26-17:50:17.151 6858 Manual compaction at level-0 from '\x00\x0c\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0d\x00\x00\x00' @ 0 : 0; will stop at '\x00\x0c\x00\x00\x05' @ 585 : 1
+2026/04/26-17:50:17.152 6858 Compacting 1@0 + 1@1 files
+2026/04/26-17:50:17.155 6858 Generated table #44@0: 87 keys, 2056 bytes
+2026/04/26-17:50:17.155 6858 Compacted 1@0 + 1@1 files => 2056 bytes
+2026/04/26-17:50:17.157 6858 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/04/26-17:50:17.158 6858 Delete type=2 #43
+2026/04/26-17:50:17.159 3164 Manual compaction at level-0 from '\x00\x0c\x00\x00\x05' @ 585 : 1 .. '\x00\x0d\x00\x00\x00' @ 0 : 0; will stop at (end)
